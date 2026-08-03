@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ATTENDEE
+  ORGANIZER
+  ADMIN
+}
+
+enum TicketStatus {
+  VALID
+  USED
+  REFUNDED
+  TRANSFERRED
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?
+  role          UserRole  @default(ATTENDEE)
+  avatar        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  events        Event[]
+  tickets       Ticket[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Event {
+  id            String      @id @default(cuid())
+  name          String
+  description   String
+  venueName     String
+  venueAddress  String
+  venueLat      Float?
+  venueLng      Float?
+  startDate     DateTime
+  endDate       DateTime
+  category      String
+  status        EventStatus  @default(DRAFT)
+  organizerId   String
+  organizer     User        @relation(fields: [organizerId], references: [id])
+  totalSeats    Int
+  availableSeats Int
+  basePrice     Float
+  currency      String      @default("USD")
+  imageUrl      String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  tickets       Ticket[]
+  seats         Seat[]
+
+  @@index([organizerId])
+  @@index([status])
+  @@index([startDate])
+}
+
+model Seat {
+  id          String   @id @default(cuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id])
+  section     String
+  row         String
+  seatNumber  String
+  price       Float
+  isAvailable Boolean  @default(true)
+  isHeld      Boolean  @default(false)
+  heldBy      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([eventId, section, row, seatNumber])
+  @@index([eventId])
+  @@index([isAvailable])
+}
+
+model Ticket {
+  id          String       @id @default(cuid())
+  eventId     String
+  event       Event        @relation(fields: [eventId], references: [id])
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  seatId      String?
+  qrCode      String
+  status      TicketStatus @default(VALID)
+  purchasePrice Float
+  checkedInAt DateTime?
+  transferredAt DateTime?
+  transferredTo String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([eventId])
+  @@index([userId])
+  @@index([qrCode])
+  @@index([status])
+}
