@@ -117,3 +117,77 @@ model Ticket {
   @@index([qrCode])
   @@index([status])
 }
+
+// Timed Entry
+model TimeSlot {
+  id          String   @id @default(cuid())
+  eventId     String
+  startTime   DateTime
+  endTime     DateTime
+  capacity    Int
+  bookedCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([eventId])
+  @@index([startTime])
+}
+
+model TicketTimeSlot {
+  id          String   @id @default(cuid())
+  ticketId    String   @unique
+  timeSlotId  String
+  checkedInAt DateTime?
+  checkedOutAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([timeSlotId])
+}
+
+// Instant Payouts
+model PayoutRequest {
+  id          String   @id @default(cuid())
+  organizerId String
+  eventId     String
+  amount      Float
+  status      String   // PENDING, PROCESSING, COMPLETED, FAILED
+  stripeTransferId String?
+  requestedAt DateTime @default(now())
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([status])
+}
+
+// SafeTix
+model TicketSecurity {
+  id          String   @id @default(cuid())
+  ticketId    String   @unique
+  deviceId    String
+  ipAddress   String
+  location    Json
+  verifiedAt  DateTime @default(now())
+  lastUsedAt  DateTime @default(now())
+  riskScore   Int      @default(0)
+  isFlagged   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ticketId])
+  @@index([deviceId])
+}
+
+// AI Copy
+model GeneratedCopy {
+  id          String   @id @default(cuid())
+  eventId     String
+  copyType    String   // description, social, email
+  content     String
+  prompt      String
+  generatedAt DateTime @default(now())
+
+  @@index([eventId])
+  @@index([copyType])
+}
