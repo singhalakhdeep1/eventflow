@@ -1,0 +1,7 @@
+import { c as create_ssr_component, e as escape } from "../../../chunks/ssr.js";
+const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
+  return `<div class="min-h-screen bg-gradient-to-b from-purple-50 to-white flex items-center justify-center"><div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md"><h1 class="text-3xl font-bold text-center text-purple-600 mb-8" data-svelte-h="svelte-19d65h3">EventFlow</h1> <h2 class="text-2xl font-semibold text-center text-gray-900 mb-6" data-svelte-h="svelte-l2pd7u">Sign In</h2> <form class="space-y-6" data-svelte-h="svelte-11l2oo9"><div><label class="block text-sm font-medium text-gray-700 mb-2">Email</label> <input type="email" placeholder="you@example.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required></div> <div><label class="block text-sm font-medium text-gray-700 mb-2">Password</label> <input type="password" placeholder="••••••••" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required></div> <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium">Sign In</button></form> <p class="mt-6 text-center text-gray-600">Don&#39;t have an account?${escape(" ")} <a href="/auth/register" class="text-purple-600 hover:text-purple-700" data-svelte-h="svelte-1vw0qmb">Sign up</a></p></div></div>`;
+});
+export {
+  Page as default
+};

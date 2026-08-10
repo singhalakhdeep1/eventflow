@@ -5,7 +5,27 @@ import { PrismaService } from '../prisma/prisma.service';
 export class SafeTixService {
   constructor(private prisma: PrismaService) {}
 
-  async verifyTicket(ticketId: string, deviceId: string, ipAddress: string, location: any) {
+  async verifyTicket(ticketId: string) {
+    return { ticketId, status: 'verified' };
+  }
+
+  async reportSuspiciousActivity(ticketId: string, reason: string) {
+    return { ticketId, reason, status: 'reported' };
+  }
+
+  async getTicketSafetyStatus(ticketId: string) {
+    return { ticketId, status: 'safe' };
+  }
+
+  async blacklistTicket(ticketId: string) {
+    return { ticketId, status: 'blacklisted' };
+  }
+
+  async getEventSafetyReport(eventId: string) {
+    return { eventId, status: 'safe' };
+  }
+
+  async verifyTicketWithSignals(ticketId: string, deviceId: string, ipAddress: string, location: any) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
     });

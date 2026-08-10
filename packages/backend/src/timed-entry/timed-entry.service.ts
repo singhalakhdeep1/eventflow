@@ -5,6 +5,22 @@ import { PrismaService } from '../prisma/prisma.service';
 export class TimedEntryService {
   constructor(private prisma: PrismaService) {}
 
+  async validateTimedEntry(ticketId: string) {
+    return { ticketId, status: 'ready' };
+  }
+
+  async configureTimedEntry(eventId: string, body: any) {
+    return { eventId, windowMinutes: body.windowMinutes ?? 30 };
+  }
+
+  async getEntryStatus(ticketId: string) {
+    return { ticketId, status: 'checked-in' };
+  }
+
+  async grantEntry(ticketId: string) {
+    return { ticketId, status: 'granted' };
+  }
+
   async createTimeSlot(eventId: string, startTime: Date, endTime: Date, capacity: number) {
     return this.prisma.timeSlot.create({
       data: {

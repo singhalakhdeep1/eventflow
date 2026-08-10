@@ -11,7 +11,8 @@
   $: isLoading = $eventStore.isLoading;
   $: user = $authStore.user;
 
-  function handleRegister(eventId: string) {
+  /** @param {string} eventId */
+  function handleRegister(eventId) {
     if (!user) {
       window.location.href = '/auth/login';
       return;
@@ -55,18 +56,18 @@
           <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
             <div class="h-48 bg-gradient-to-r from-purple-400 to-purple-600"></div>
             <div class="p-6">
-              <h3 class="text-xl font-semibold mb-2">{event.title}</h3>
+              <h3 class="text-xl font-semibold mb-2">{event.name}</h3>
               <div class="flex items-center text-gray-600 mb-2">
-                <span class="text-sm">{event.location}</span>
+                <span class="text-sm">{event.venueName || 'Venue TBD'}</span>
               </div>
               <div class="flex items-center text-gray-600 mb-2">
-                <span class="text-sm">{new Date(event.startDate).toLocaleDateString()}</span>
+                <span class="text-sm">{event.date || event.startDate || 'TBD'}</span>
               </div>
               <div class="flex items-center text-gray-600 mb-4">
-                <span class="text-sm">{event.capacity} capacity</span>
+                <span class="text-sm">{event.category || 'General admission'}</span>
               </div>
               <div class="flex justify-between items-center">
-                <span class="text-2xl font-bold text-purple-600">${event.ticketTypes[0]?.price || 0}</span>
+                <span class="text-2xl font-bold text-purple-600">${event.basePrice || 0}</span>
                 <button
                   on:click={() => handleRegister(event.id)}
                   class="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors"

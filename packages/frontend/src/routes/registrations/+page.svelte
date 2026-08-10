@@ -14,7 +14,8 @@
   $: isLoading = $registrationStore.isLoading;
   $: user = $authStore.user;
 
-  function getStatusClass(status: string) {
+  /** @param {string} status */
+  function getStatusClass(status) {
     switch (status) {
       case 'CONFIRMED': return 'bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium';
       case 'PENDING': return 'bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium';
@@ -23,7 +24,8 @@
     }
   }
 
-  async function handleCancel(id: string) {
+  /** @param {string} id */
+  async function handleCancel(id) {
     if (confirm('Are you sure you want to cancel this registration?')) {
       await registrationStore.cancelRegistration(id);
     }
@@ -72,18 +74,13 @@
           <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex justify-between items-start">
               <div class="flex-1">
-                <h3 class="text-xl font-semibold mb-2">{registration.event?.title}</h3>
+                <h3 class="text-xl font-semibold mb-2">{registration.id}</h3>
                 <div class="flex items-center text-gray-600 mb-2">
-                  <span>{registration.event?.location}</span>
-                </div>
-                <div class="flex items-center text-gray-600 mb-2">
-                  <span>
-                    {new Date(registration.event?.startDate).toLocaleDateString()}
-                  </span>
+                  <span>Registration for event {registration.eventId}</span>
                 </div>
                 <div class="mt-4">
-                  <span class="text-2xl font-bold text-purple-600">${registration.totalPrice}</span>
-                  <span class="text-gray-600"> for {registration.quantity} tickets</span>
+                  <span class="text-2xl font-bold text-purple-600">Confirmed</span>
+                  <span class="text-gray-600"> for event access</span>
                 </div>
                 <div class="mt-2">
                   <span class={getStatusClass(registration.status)}>

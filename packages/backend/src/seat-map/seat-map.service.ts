@@ -5,6 +5,27 @@ import { PrismaService } from '../prisma/prisma.service';
 export class SeatMapService {
   constructor(private prisma: PrismaService) {}
 
+  async holdSeats(eventId: string, seatIds: string[], userId: string) {
+    return Promise.all(
+      seatIds.map((seatId) => this.holdSeat(seatId, userId)),
+    );
+  }
+
+  async releaseSeats(seatIds: string[], userId: string) {
+    return Promise.all(
+      seatIds.map((seatId) => this.releaseSeat(seatId)),
+    );
+  }
+
+  async configureSeatMap(eventId: string, body: any) {
+    return {
+      eventId,
+      sectionCount: body.sectionCount ?? 4,
+      rowsPerSection: body.rowsPerSection ?? 8,
+      seatsPerRow: body.seatsPerRow ?? 12,
+    };
+  }
+
   async generateSeatMap(eventId: string, configuration: any) {
     const { sections, rowsPerSection, seatsPerRow } = configuration;
     const seats = [];
@@ -35,15 +56,15 @@ export class SeatMapService {
 
   private calculatePrice(section: any, row: number, basePrice: number): number {
     let price = basePrice;
-    
+
     // Section pricing tiers
     if (section.tier === 'premium') price *= 1.5;
     else if (section.tier === 'vip') price *= 2;
-    
+
     // Row pricing (closer to stage = more expensive)
-    const rowMultiplier = 1 + (rowsPerSection - row) * 0.05;
+    const rowMultiplier = 1 + (Math.max(row, 1) - 1) * 0.05;
     price *= rowMultiplier;
-    
+
     return Math.round(price * 100) / 100;
   }
 

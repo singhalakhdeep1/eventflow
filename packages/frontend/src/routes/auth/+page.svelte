@@ -9,8 +9,9 @@
     
     <form on:submit={(e) => e.preventDefault()} class="space-y-6">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
         <input
+          id="email"
           type="email"
           placeholder="you@example.com"
           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -19,8 +20,9 @@
       </div>
       
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
         <input
+          id="password"
           type="password"
           placeholder="••••••••"
           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
