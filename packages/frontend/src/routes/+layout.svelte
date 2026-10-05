@@ -1,12 +1,10 @@
-<script>
+<script lang="ts">
+  import '../app.css';
   import { onMount } from 'svelte';
   import { authStore } from '$lib/stores/auth';
 
   onMount(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      authStore.fetchProfile();
-    }
+    authStore.init();
   });
 </script>
 

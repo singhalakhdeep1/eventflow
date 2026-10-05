@@ -1,29 +1,41 @@
-import { IsString, IsDate, IsNumber, IsOptional, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDateString, IsInt, Min, MaxLength } from 'class-validator';
 
 export class CreateEventDto {
   @IsString()
-  title: string;
+  @MaxLength(200)
+  name: string;
 
   @IsString()
-  venue: string;
+  description: string;
 
-  @IsDate()
-  eventDate: Date;
+  @IsString()
+  venueName: string;
 
-  @IsNumber()
+  @IsString()
+  venueAddress: string;
+
+  @IsDateString()
+  startDate: string;
+
+  @IsDateString()
+  endDate: string;
+
+  @IsString()
+  category: string;
+
+  @IsInt()
   @Min(1)
-  totalTickets: number;
+  totalSeats: number;
 
   @IsNumber()
   @Min(0)
-  @IsOptional()
-  basePrice?: number;
+  basePrice: number;
 
   @IsString()
   @IsOptional()
-  description?: string;
+  currency?: string;
 
   @IsString()
   @IsOptional()
-  category?: string;
+  imageUrl?: string;
 }

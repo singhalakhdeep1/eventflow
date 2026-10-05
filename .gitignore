@@ -35,8 +35,11 @@ yarn-error.log*
 # Turbo
 .turbo
 
-# Prisma
-prisma/migrations/
+# Prisma (migrations must be committed)
+
+# SvelteKit
+.svelte-kit/
+vite.config.*.timestamp-*
 
 # IDE
 .vscode/

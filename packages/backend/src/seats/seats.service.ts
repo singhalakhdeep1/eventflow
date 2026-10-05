@@ -16,7 +16,9 @@ export class SeatsService {
     return this.prisma.seat.findMany({
       where: {
         ...(filters.eventId && { eventId: filters.eventId }),
-        ...(filters.status && { status: filters.status }),
+        ...(filters.status === 'AVAILABLE' && { isAvailable: true, isHeld: false }),
+        ...(filters.status === 'RESERVED' && { isHeld: true }),
+        ...(filters.status === 'SOLD' && { isAvailable: false, isHeld: false }),
       },
       include: { event: true },
     });
@@ -25,7 +27,7 @@ export class SeatsService {
   async findById(id: string) {
     const seat = await this.prisma.seat.findUnique({
       where: { id },
-      include: { event: true, ticket: true },
+      include: { event: true, tickets: true },
     });
 
     if (!seat) {
@@ -44,39 +46,30 @@ export class SeatsService {
   }
 
   async bookSeat(seatId: string, userId: string) {
-    const seat = await this.findById(seatId);
+    // Atomic claim: only one caller can flip an available seat to held
+    const claimed = await this.prisma.seat.updateMany({
+      where: { id: seatId, isAvailable: true, isHeld: false },
+      data: { isHeld: true, heldBy: userId },
+    });
 
-    if (seat.status !== 'AVAILABLE') {
+    if (claimed.count === 0) {
+      await this.findById(seatId);
       throw new BadRequestException('Seat is not available');
     }
 
-    return this.prisma.seat.update({
-      where: { id: seatId },
-      data: {
-        status: 'RESERVED',
-        reservedBy: userId,
-        reservedAt: new Date(),
-      },
-    });
+    return this.findById(seatId);
   }
 
   async releaseSeat(seatId: string) {
     return this.prisma.seat.update({
       where: { id: seatId },
-      data: {
-        status: 'AVAILABLE',
-        reservedBy: null,
-        reservedAt: null,
-      },
+      data: { isHeld: false, heldBy: null },
     });
   }
 
   async getAvailableSeats(eventId: string) {
     return this.prisma.seat.findMany({
-      where: {
-        eventId,
-        status: 'AVAILABLE',
-      },
+      where: { eventId, isAvailable: true, isHeld: false },
       include: { event: true },
     });
   }

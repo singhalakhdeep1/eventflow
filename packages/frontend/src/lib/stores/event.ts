@@ -1,28 +1,26 @@
 import { writable } from 'svelte/store';
-import type { Event } from '$lib/types';
+import { errorMessage, eventsApi } from '$lib/api';
+import type { Event, EventStatus } from '$lib/types';
 
 type EventState = {
   events: Event[];
-  selectedEvent: Event | null;
   isLoading: boolean;
   error: string | null;
 };
 
 const createEventStore = () => {
-  const { subscribe, set, update } = writable<EventState>({ events: [], selectedEvent: null, isLoading: false, error: null });
+  const { subscribe, set, update } = writable<EventState>({ events: [], isLoading: false, error: null });
 
   return {
     subscribe,
-    fetchEvents: async (filters: Record<string, unknown>) => {
-      update((state) => ({ ...state, isLoading: true }));
+    fetchEvents: async (filters: { status?: EventStatus; organizerId?: string } = {}) => {
+      update((s) => ({ ...s, isLoading: true, error: null }));
       try {
-        const response = await fetch('http://localhost:3004/events');
-        const events = await response.json();
-        set({ events, selectedEvent: null, isLoading: false, error: null });
+        set({ events: await eventsApi.getAll(filters), isLoading: false, error: null });
       } catch (error) {
-        update((state) => ({ ...state, isLoading: false, error: 'Failed to fetch events' }));
+        set({ events: [], isLoading: false, error: errorMessage(error, 'Failed to load events') });
       }
-    },
+    }
   };
 };
 

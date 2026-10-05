@@ -1,26 +1,24 @@
-import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { CheckinService } from './checkin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('checkin')
+@UseGuards(JwtAuthGuard)
 export class CheckinController {
   constructor(private checkinService: CheckinService) {}
 
   @Post('scan')
-  @UseGuards(JwtAuthGuard)
-  scanTicket(@Body() body: { qrCode: string }) {
-    return this.checkinService.checkIn(body.qrCode);
+  scanTicket(@Request() req, @Body() body: { qrCode: string }) {
+    return this.checkinService.checkIn(body.qrCode, req.user);
   }
 
   @Get('event/:eventId')
-  @UseGuards(JwtAuthGuard)
-  getEventCheckins(@Param('eventId') eventId: string) {
-    return this.checkinService.getCheckinsByEvent(eventId);
+  getEventCheckins(@Request() req, @Param('eventId') eventId: string) {
+    return this.checkinService.getCheckinsByEvent(eventId, req.user);
   }
 
   @Get('event/:eventId/stats')
-  @UseGuards(JwtAuthGuard)
-  getEventStats(@Param('eventId') eventId: string) {
-    return this.checkinService.getCheckinStats(eventId);
+  getEventStats(@Request() req, @Param('eventId') eventId: string) {
+    return this.checkinService.getCheckinStats(eventId, req.user);
   }
 }

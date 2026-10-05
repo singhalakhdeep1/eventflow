@@ -37,11 +37,13 @@ model User {
   phone         String?
   role          UserRole  @default(ATTENDEE)
   avatar        String?
+  stripeAccountId String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   events        Event[]
   tickets       Ticket[]
+  payments      Payment[]
 
   @@index([email])
   @@index([role])
@@ -71,6 +73,7 @@ model Event {
 
   tickets       Ticket[]
   seats         Seat[]
+  payouts       PayoutRequest[]
 
   @@index([organizerId])
   @@index([status])
@@ -88,8 +91,11 @@ model Seat {
   isAvailable Boolean  @default(true)
   isHeld      Boolean  @default(false)
   heldBy      String?
+  heldUntil   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  tickets     Ticket[]
 
   @@unique([eventId, section, row, seatNumber])
   @@index([eventId])
@@ -103,7 +109,8 @@ model Ticket {
   userId      String
   user        User         @relation(fields: [userId], references: [id])
   seatId      String?
-  qrCode      String
+  seat        Seat?        @relation(fields: [seatId], references: [id])
+  qrCode      String       @unique
   status      TicketStatus @default(VALID)
   purchasePrice Float
   checkedInAt DateTime?
@@ -112,10 +119,31 @@ model Ticket {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
+  payments    Payment[]
+  timeSlot    TicketTimeSlot?
+  security    TicketSecurity?
+
   @@index([eventId])
   @@index([userId])
-  @@index([qrCode])
   @@index([status])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Float
+  currency  String   @default("USD")
+  status    String   @default("PENDING") // PENDING, COMPLETED, REFUNDED, FAILED
+  method    String   @default("card")
+  stripeId  String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ticketId])
+  @@index([userId])
 }
 
 // Timed Entry
@@ -128,6 +156,8 @@ model TimeSlot {
   bookedCount Int      @default(0)
   createdAt   DateTime @default(now())
 
+  tickets     TicketTimeSlot[]
+
   @@index([eventId])
   @@index([startTime])
 }
@@ -135,7 +165,9 @@ model TimeSlot {
 model TicketTimeSlot {
   id          String   @id @default(cuid())
   ticketId    String   @unique
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
   timeSlotId  String
+  timeSlot    TimeSlot @relation(fields: [timeSlotId], references: [id])
   checkedInAt DateTime?
   checkedOutAt DateTime?
   createdAt   DateTime @default(now())
@@ -155,6 +187,7 @@ model PayoutRequest {
   requestedAt DateTime @default(now())
   processedAt DateTime?
   createdAt   DateTime @default(now())
+  event       Event    @relation(fields: [eventId], references: [id])
 
   @@index([organizerId])
   @@index([eventId])
@@ -165,6 +198,7 @@ model PayoutRequest {
 model TicketSecurity {
   id          String   @id @default(cuid())
   ticketId    String   @unique
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
   deviceId    String
   ipAddress   String
   location    Json

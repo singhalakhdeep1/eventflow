@@ -38,10 +38,10 @@ describe('EventsService', () => {
   describe('create', () => {
     it('should create an event', async () => {
       const eventData = {
-        title: 'Test Event',
-        venue: 'Test Venue',
-        eventDate: new Date(),
-        totalTickets: 100,
+        name: 'Test Event',
+        venueName: 'Test Venue',
+        startDate: new Date(),
+        totalSeats: 100,
         organizerId: 'org-1',
       };
 
@@ -51,6 +51,7 @@ describe('EventsService', () => {
 
       expect(prismaService.event.create).toHaveBeenCalledWith({
         data: eventData,
+        include: { organizer: true },
       });
       expect(result).toEqual({ id: '1', ...eventData });
     });
@@ -58,7 +59,7 @@ describe('EventsService', () => {
 
   describe('findAll', () => {
     it('should return an array of events', async () => {
-      const events = [{ id: '1', title: 'Event 1' }];
+      const events = [{ id: '1', name: 'Event 1' }];
       mockPrismaService.event.findMany.mockResolvedValue(events);
 
       const result = await service.findAll({});
@@ -69,7 +70,7 @@ describe('EventsService', () => {
 
   describe('findById', () => {
     it('should return a single event', async () => {
-      const event = { id: '1', title: 'Event 1' };
+      const event = { id: '1', name: 'Event 1' };
       mockPrismaService.event.findUnique.mockResolvedValue(event);
 
       const result = await service.findById('1');
@@ -78,3 +79,4 @@ describe('EventsService', () => {
     });
   });
 });
+

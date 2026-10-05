@@ -3,9 +3,10 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 COPY . .
+# PUBLIC_API_URL is read at runtime (dynamic public env), so it does not need to be set here
 RUN npm run build
 
 FROM node:20-alpine AS runner
@@ -13,12 +14,11 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/build ./build
 
+ENV PORT=3000
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["node", "build"]

@@ -1,6 +1,9 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Query, ForbiddenException } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CreateEventDto } from './dto/create-event.dto';
+import { UpdateEventDto } from './dto/update-event.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
 
 @Controller('events')
 export class EventsController {
@@ -8,9 +11,13 @@ export class EventsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  create(@Request() req, @Body() eventData: any) {
+  create(@Request() req, @Body() dto: CreateEventDto) {
+    if (req.user.role !== 'ORGANIZER' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Only organizers can create events');
+    }
     return this.eventsService.create({
-      ...eventData,
+      ...dto,
+      availableSeats: dto.totalSeats,
       organizerId: req.user.id,
     });
   }
@@ -27,19 +34,19 @@ export class EventsController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard)
-  update(@Param('id') id: string, @Body() data: any) {
-    return this.eventsService.update(id, data);
+  update(@Request() req, @Param('id') id: string, @Body() dto: UpdateEventDto) {
+    return this.eventsService.update(id, dto, req.user);
   }
 
   @Put(':id/status')
   @UseGuards(JwtAuthGuard)
-  updateStatus(@Param('id') id: string, @Body() body: { status: string }) {
-    return this.eventsService.updateStatus(id, body.status);
+  updateStatus(@Request() req, @Param('id') id: string, @Body() body: UpdateStatusDto) {
+    return this.eventsService.updateStatus(id, body.status, req.user);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  remove(@Param('id') id: string) {
-    return this.eventsService.delete(id);
+  remove(@Request() req, @Param('id') id: string) {
+    return this.eventsService.delete(id, req.user);
   }
 }

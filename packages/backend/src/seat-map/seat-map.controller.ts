@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Request, UseGuards } from '@nestjs/common';
 import { SeatMapService } from './seat-map.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('seat-map')
 export class SeatMapController {
@@ -11,17 +12,20 @@ export class SeatMapController {
   }
 
   @Post('hold')
-  async holdSeats(@Body() body: { eventId: string; seatIds: string[]; userId: string }) {
-    return this.seatMapService.holdSeats(body.eventId, body.seatIds, body.userId);
+  @UseGuards(JwtAuthGuard)
+  async holdSeats(@Request() req, @Body() body: { eventId: string; seatIds: string[] }) {
+    return this.seatMapService.holdSeats(body.eventId, body.seatIds, req.user.id);
   }
 
   @Post('release')
-  async releaseSeats(@Body() body: { seatIds: string[]; userId: string }) {
-    return this.seatMapService.releaseSeats(body.seatIds, body.userId);
+  @UseGuards(JwtAuthGuard)
+  async releaseSeats(@Request() req, @Body() body: { seatIds: string[] }) {
+    return this.seatMapService.releaseSeats(body.seatIds, req.user.id);
   }
 
   @Post('configure/:eventId')
-  async configureSeatMap(@Param('eventId') eventId: string, @Body() body: any) {
-    return this.seatMapService.configureSeatMap(eventId, body);
+  @UseGuards(JwtAuthGuard)
+  async configureSeatMap(@Request() req, @Param('eventId') eventId: string, @Body() body: any) {
+    return this.seatMapService.configureSeatMap(eventId, body, req.user);
   }
 }

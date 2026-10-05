@@ -1,5 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+
+const ticketInclude = { seat: true, event: true, user: { select: { id: true, email: true, firstName: true, lastName: true } } };
 
 @Injectable()
 export class TicketsService {
@@ -8,73 +11,51 @@ export class TicketsService {
   async create(data: any) {
     const { seatId, userId } = data;
 
-    // Check if seat exists and is available
-    const seat = await this.prisma.seat.findUnique({
-      where: { id: seatId },
-    });
-
+    const seat = await this.prisma.seat.findUnique({ where: { id: seatId } });
     if (!seat) {
       throw new NotFoundException('Seat not found');
     }
 
-    if (seat.status !== 'AVAILABLE') {
+    // The seat may be held by the buyer (via bookSeat) or still free
+    const claimed = await this.prisma.seat.updateMany({
+      where: {
+        id: seatId,
+        isAvailable: true,
+        OR: [{ isHeld: false }, { heldBy: userId }, { heldUntil: { lt: new Date() } }],
+      },
+      data: { isAvailable: false, isHeld: false, heldBy: null, heldUntil: null },
+    });
+    if (claimed.count === 0) {
       throw new BadRequestException('Seat is not available');
     }
 
-    // Generate QR code (simplified - use QR library in production)
-    const qrCode = this.generateQRCode(seatId, userId);
-
-    // Create ticket
-    const ticket = await this.prisma.ticket.create({
+    return this.prisma.ticket.create({
       data: {
+        eventId: seat.eventId,
         seatId,
         userId,
-        qrCode,
+        qrCode: this.generateQRCode(),
+        purchasePrice: seat.price,
         status: 'VALID',
       },
-      include: {
-        seat: {
-          include: { event: true },
-        },
-        user: true,
-      },
+      include: ticketInclude,
     });
-
-    // Update seat status
-    await this.prisma.seat.update({
-      where: { id: seatId },
-      data: {
-        status: 'SOLD',
-      },
-    });
-
-    return ticket;
   }
 
   async findAll(filters: any = {}) {
     return this.prisma.ticket.findMany({
       where: {
         ...(filters.userId && { userId: filters.userId }),
-        ...(filters.eventId && { seat: { event: { id: filters.eventId } } }),
+        ...(filters.eventId && { eventId: filters.eventId }),
       },
-      include: {
-        seat: {
-          include: { event: true },
-        },
-        user: true,
-      },
+      include: ticketInclude,
     });
   }
 
   async findById(id: string) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id },
-      include: {
-        seat: {
-          include: { event: true },
-        },
-        user: true,
-      },
+      include: ticketInclude,
     });
 
     if (!ticket) {
@@ -87,12 +68,7 @@ export class TicketsService {
   async validateTicket(qrCode: string) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { qrCode },
-      include: {
-        seat: {
-          include: { event: true },
-        },
-        user: true,
-      },
+      include: ticketInclude,
     });
 
     if (!ticket) {
@@ -107,17 +83,21 @@ export class TicketsService {
   }
 
   async invalidateTicket(id: string) {
-    return this.prisma.ticket.update({
-      where: { id },
-      data: {
-        status: 'USED',
-        usedAt: new Date(),
-      },
+    // Conditional update so a ticket can only be consumed once
+    const result = await this.prisma.ticket.updateMany({
+      where: { id, status: 'VALID' },
+      data: { status: 'USED', checkedInAt: new Date() },
     });
+
+    if (result.count === 0) {
+      throw new BadRequestException('Ticket is not valid');
+    }
+
+    return this.findById(id);
   }
 
-  private generateQRCode(seatId: string, userId: string): string {
-    // Simplified QR code generation
-    return `TICKET-${seatId}-${userId}-${Date.now()}`;
+  // Unguessable code: the previous format embedded seat/user ids and a timestamp
+  private generateQRCode(): string {
+    return `TKT-${randomBytes(16).toString('hex')}`;
   }
 }

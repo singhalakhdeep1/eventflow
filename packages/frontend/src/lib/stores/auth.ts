@@ -1,65 +1,53 @@
 import { writable } from 'svelte/store';
-import type { User } from '$lib/types';
+import { authApi, errorMessage, tokenStorage } from '$lib/api';
+import type { RegisterInput, User } from '$lib/types';
 
 type AuthState = {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
+  // True once the initial profile lookup has finished, so pages can avoid redirecting too early
+  ready: boolean;
   error: string | null;
 };
 
 const createAuthStore = () => {
-  const { subscribe, set, update } = writable<AuthState>({ user: null, token: null, isLoading: false, error: null });
+  const { subscribe, set, update } = writable<AuthState>({ user: null, isLoading: false, ready: false, error: null });
+
+  async function authenticate(request: () => ReturnType<typeof authApi.login>, failure: string): Promise<boolean> {
+    update((s) => ({ ...s, isLoading: true, error: null }));
+    try {
+      const { access_token, user } = await request();
+      tokenStorage.set(access_token);
+      set({ user, isLoading: false, ready: true, error: null });
+      return true;
+    } catch (error) {
+      update((s) => ({ ...s, isLoading: false, error: errorMessage(error, failure) }));
+      return false;
+    }
+  }
 
   return {
     subscribe,
-    login: async (email: string, password: string) => {
-      update((state) => ({ ...state, isLoading: true, error: null }));
-      try {
-        const response = await fetch('http://localhost:3004/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
-        const data = await response.json();
-        localStorage.setItem('token', data.access_token);
-        set({ user: data.user, token: data.access_token, isLoading: false, error: null });
-      } catch (error) {
-        update((state) => ({ ...state, isLoading: false, error: 'Login failed' }));
-      }
-    },
-    register: async (data: Record<string, unknown>) => {
-      update((state) => ({ ...state, isLoading: true, error: null }));
-      try {
-        const response = await fetch('http://localhost:3004/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-        const payload = await response.json();
-        localStorage.setItem('token', payload.access_token);
-        set({ user: payload.user, token: payload.access_token, isLoading: false, error: null });
-      } catch (error) {
-        update((state) => ({ ...state, isLoading: false, error: 'Registration failed' }));
-      }
-    },
+    login: (email: string, password: string) => authenticate(() => authApi.login(email, password), 'Login failed'),
+    register: (input: RegisterInput) => authenticate(() => authApi.register(input), 'Registration failed'),
     logout: () => {
-      localStorage.removeItem('token');
-      set({ user: null, token: null, isLoading: false, error: null });
+      tokenStorage.clear();
+      set({ user: null, isLoading: false, ready: true, error: null });
     },
-    fetchProfile: async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-      try {
-        const response = await fetch('http://localhost:3004/auth/profile', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const user = await response.json();
-        update((state) => ({ ...state, user, isLoading: false }));
-      } catch (error) {
-        update((state) => ({ ...state, isLoading: false, error: 'Failed to fetch profile' }));
+    /** Restores the session from a stored token, if any. */
+    init: async () => {
+      if (!tokenStorage.get()) {
+        update((s) => ({ ...s, ready: true }));
+        return;
       }
-    },
+      try {
+        const user = await authApi.getProfile();
+        set({ user, isLoading: false, ready: true, error: null });
+      } catch {
+        tokenStorage.clear();
+        set({ user: null, isLoading: false, ready: true, error: null });
+      }
+    }
   };
 };
 

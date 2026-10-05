@@ -1,32 +1,35 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Req, UseGuards, ForbiddenException } from '@nestjs/common';
 import { PayoutsService } from './payouts.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('payouts')
+@UseGuards(JwtAuthGuard)
 export class PayoutsController {
   constructor(private readonly payoutsService: PayoutsService) {}
 
   @Post('request')
-  async requestPayout(@Body() body: { organizerId: string; eventId: string }) {
-    return this.payoutsService.requestPayout(body.organizerId, body.eventId);
+  async requestPayout(@Req() req: any, @Body() body: { eventId: string }) {
+    return this.payoutsService.requestPayout(req.user.id, body.eventId);
   }
 
-  @Get('history/:organizerId')
-  async getPayoutHistory(@Param('organizerId') organizerId: string) {
-    return this.payoutsService.getPayoutHistory(organizerId);
+  @Get('history')
+  async getPayoutHistory(@Req() req: any) {
+    return this.payoutsService.getPayoutHistory(req.user.id);
   }
 
   @Get('status/:payoutId')
-  async getPayoutStatus(@Param('payoutId') payoutId: string) {
-    return this.payoutsService.getPayoutStatus(payoutId);
+  async getPayoutStatus(@Req() req: any, @Param('payoutId') payoutId: string) {
+    return this.payoutsService.getPayoutStatus(payoutId, req.user.id, req.user.role === 'ADMIN');
   }
 
   @Post('process/:payoutId')
-  async processPayout(@Param('payoutId') payoutId: string) {
+  async processPayout(@Req() req: any, @Param('payoutId') payoutId: string) {
+    if (req.user.role !== 'ADMIN') throw new ForbiddenException('Admin only');
     return this.payoutsService.processPayout(payoutId);
   }
 
-  @Get('pending/:organizerId')
-  async calculatePendingEarnings(@Param('organizerId') organizerId: string) {
-    return this.payoutsService.calculatePendingEarnings(organizerId);
+  @Get('pending')
+  async calculatePendingEarnings(@Req() req: any) {
+    return this.payoutsService.calculatePendingEarnings(req.user.id);
   }
 }

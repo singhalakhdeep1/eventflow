@@ -15,11 +15,7 @@ export class PaymentsService {
   async createPaymentIntent(ticketId: string) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
-      include: {
-        seat: {
-          include: { event: true },
-        },
-      },
+      include: { event: true },
     });
 
     if (!ticket) {
@@ -27,7 +23,7 @@ export class PaymentsService {
     }
 
     const paymentIntent = await this.stripe.paymentIntents.create({
-      amount: Math.round(ticket.seat.event.price * 100),
+      amount: Math.round(ticket.purchasePrice * 100),
       currency: 'usd',
       metadata: {
         ticketId,
@@ -37,7 +33,7 @@ export class PaymentsService {
     // Create payment record
     const payment = await this.prisma.payment.create({
       data: {
-        amount: ticket.seat.event.price,
+        amount: ticket.purchasePrice,
         currency: 'USD',
         status: 'PENDING',
         stripeId: paymentIntent.id,
